@@ -90,3 +90,7 @@ New project-owned package/engineering files use the owner's MIT default. See LIC
 ## Checked synthetic wiring demo
 
 See [commands, saved output and scope](docs/synthetic-demo.md). This is invented-input execution evidence, not model accuracy or a real-data gallery.
+
+## Portable notebook follow-up
+
+The root notebook now uses the supported local package with safe defaults and explicit data/training opt-ins. It replaces the platform-specific experiment rather than reproducing historical results. See `docs/notebook-migration.md` and the notebook settings. Earlier descriptions of live notebook downloads/hard-coded paths are historical and superseded. No dataset or weight rights are granted.
