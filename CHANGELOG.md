@@ -11,3 +11,8 @@
 - Explicit CPU fine-tuning/inference, safetensors-only loading and finite-loss checks.
 - Meaningful offline data/CLI/tiny Marian tests, uv lock, Ruff/mypy/hooks, CI and light Docker image.
 - Exact limitations and review-only GitHub presentation notes.
+
+
+### Engineering follow-up
+- Use the committed uv lock in CI and key dependency-installer caching by that lock.
+- Complete copy-only profile README drafts and clarify historical versus current verification.
