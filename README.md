@@ -81,3 +81,8 @@ Typer CLI -> input validation -> core/model -> separate errors on stderr
 Next work: evaluate a licensed, appropriate pretrained local model on a genuinely untouched bilingual test set, inspect generated translations and failure modes, add length/domain slices, and measure BLEU/chrF with exact versions and signatures. No real-model quality, broad platform compatibility or production-readiness is claimed.
 
 See [verification and phase notes](docs/verification.md), [changelog](CHANGELOG.md), and [copy-only GitHub presentation](docs/presentation.md). This review branch does not change the repository license, create a release/tag, merge main, or publish model/data artifacts.
+
+
+## License scope
+
+New project-owned package/engineering files use the owner's MIT default. See LICENSE and LICENSE-SCOPE.md. This is not permission to relicense historical notebooks, third-party code, datasets, models or weights. Their provenance and terms still need review. Earlier verification entries saying no license was added describe the initial pilot, not this follow-up.
