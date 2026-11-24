@@ -1,0 +1,26 @@
+{
+  "inference": {
+    "source": "https://huggingface.co/Helsinki-NLP/opus-mt-en-de",
+    "revision": "6183067f769a302e3861815543b9f312c71b0ca4",
+    "license": "CC BY4 model card",
+    "outputs": [
+      "Hallo, wie geht's?",
+      "Der Zug f\u00e4hrt um 12 Uhr.",
+      "Dieses Projekt l\u00e4uft auf einem Laptop."
+    ],
+    "limits": "Three illustrative inference examples, not translation-quality benchmark."
+  },
+  "fine_tune": {
+    "direction": "English to German",
+    "training": {
+      "validation_loss": 0.3215747820213437,
+      "validation_target_tokens": 32,
+      "validation_pairs": 4
+    },
+    "train_pairs": 8,
+    "dev_pairs": 4,
+    "source": "https://downloads.tatoeba.org/exports/per_language/deu/",
+    "terms": "CC BY2.0 France, sentence IDs/authors retained",
+    "limits": "First12 linked attributed sentences, no benchmark/pretraining-overlap claim"
+  }
+}
