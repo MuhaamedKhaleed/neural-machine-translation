@@ -2,6 +2,19 @@
 
 A local-only CLI for checking parallel CSV data, running an existing Marian translation model, and deliberately starting CPU fine-tuning. This engineering pass extracts usable code from an experimental English/German translation notebook and fixes target-tokenization and padding problems. No pretrained model or corpus is bundled.
 
+## Real-data quickstart (about 3 minutes)
+
+Needs Python 3.11 or 3.12 (the locked PyTorch/TensorFlow wheels have no 3.13+ build); `--python 3.11` makes uv fetch it. Needs internet for the first install and downloads, and roughly 2 GB of free RAM.
+
+```sh
+uv sync --python 3.11 --locked --extra dev --extra ml
+uv run --no-sync python scripts/fetch_german.py --output ./german-source       # pinned Helsinki-NLP opus-mt-en-de (~300 MB) + Tatoeba exports
+uv run --no-sync local-translation translate ./german-source "The weather is nice today."
+uv run --no-sync python scripts/prepare_german.py --data ./german-source --output ./german-pairs
+uv run --no-sync python scripts/train_german.py --model ./german-source --data ./german-pairs/pairs.json --output ./german-model
+```
+Output: a real German translation from the pretrained model (25 Nov 2026: "Das Wetter ist heute schön."), then a fine-tuned copy in `german-model`. The bundled fine-tune uses 12 sentence pairs, so it is a wiring demo; to improve it, build your own CSV and run `local-translation train ./german-source YOUR.csv ./my-model --epochs N`.
+
 ## Quick start
 
 Python 3.11 or 3.12, Linux x86_64. Install uv first using its official instructions, then:
