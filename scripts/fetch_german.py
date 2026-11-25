@@ -59,12 +59,12 @@ SOURCES = [
     (
         "config.json",
         "https://huggingface.co/Helsinki-NLP/opus-mt-en-de/resolve/6183067f769a302e3861815543b9f312c71b0ca4/config.json",
-        "f2d6e18ab7a97b96d61484b787aac9cb8d2f7f69731c58cf7f041c89d0512b29",
+        "41c7890e6f6c1f72c5c626569cfe739a8362080940edbb1747f25173f541653b",
     ),
     (
         "generation_config.json",
         "https://huggingface.co/Helsinki-NLP/opus-mt-en-de/resolve/6183067f769a302e3861815543b9f312c71b0ca4/generation_config.json",
-        "ccb291c223ffca5554af0f6b4d272da15078d2523452c1e39f57247e1dc3e8eb",
+        "e5cccf365761fb31175fc978a75f5e857a822f173d0e447aa3a25d7cbcda15a4",
     ),
     (
         "pytorch_model.bin",
