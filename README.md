@@ -1,124 +1,38 @@
-# Local Marian Translation
+# Local Marian Translation (English/German)
 
-A local-only CLI for checking parallel CSV data, running an existing Marian translation model, and deliberately starting CPU fine-tuning. This engineering pass extracts usable code from an experimental English/German translation notebook and fixes target-tokenization and padding problems. No pretrained model or corpus is bundled.
+A local CLI for validating parallel CSV data, translating with a local Marian model, and running explicit CPU fine-tuning. Extracted from an experimental English/German notebook, fixing target-tokenization and padding bugs along the way.
 
-## Real-data quickstart (about 3 minutes)
+## Results (honest)
 
-Needs Python 3.11 or 3.12 (the locked PyTorch/TensorFlow wheels have no 3.13+ build); `--python 3.11` makes uv fetch it. Needs internet for the first install and downloads, and roughly 2 GB of free RAM.
+- Fresh clone translates real sentences with a pinned public model (Helsinki-NLP `opus-mt-en-de`, ~300 MB). Recorded 25 Nov 2026: "The weather is nice today." -> "Das Wetter ist heute schön.".
+- The bundled fine-tune runs on 12 sentence pairs. It proves the train/save/reload wiring; it is not a quality improvement.
+- Validation metric is token-weighted teacher-forced loss. No BLEU, chrF, WMT benchmark or human evaluation has been run.
+- 24 tests, 96% statement coverage (tiny random Marian forward/backward, synthetic SentencePiece, safetensors save/load). Coverage proves wiring, not translation quality.
+
+## Quickstart (fresh clone, about 3 minutes)
+
+Needs Python 3.11 or 3.12 (locked wheels have no 3.13+ build), Linux x86_64, internet for the first install/downloads, ~2 GB free RAM.
 
 ```sh
 uv sync --python 3.11 --locked --extra dev --extra ml
-uv run --no-sync python scripts/fetch_german.py --output ./german-source       # pinned Helsinki-NLP opus-mt-en-de (~300 MB) + Tatoeba exports
+uv run --no-sync python scripts/fetch_german.py --output ./german-source       # pinned opus-mt-en-de + Tatoeba exports
 uv run --no-sync local-translation translate ./german-source "The weather is nice today."
 uv run --no-sync python scripts/prepare_german.py --data ./german-source --output ./german-pairs
 uv run --no-sync python scripts/train_german.py --model ./german-source --data ./german-pairs/pairs.json --output ./german-model
 ```
-Output: a real German translation from the pretrained model (25 Nov 2026: "Das Wetter ist heute schön."), then a fine-tuned copy in `german-model`. The bundled fine-tune uses 12 sentence pairs, so it is a wiring demo; to improve it, build your own CSV and run `local-translation train ./german-source YOUR.csv ./my-model --epochs N`.
 
-## Quick start
+To fine-tune on your own data, build a `source,target` CSV and run `local-translation train ./german-source YOUR.csv ./my-model --epochs N`.
 
-Python 3.11 or 3.12, Linux x86_64. Install uv first using its official instructions, then:
+Data checks run without the ML stack: `uv sync --locked --extra dev` then `local-translation check-data --data examples/parallel.csv` returns `{"pairs": 3, "train_pairs": 2, "validation_pairs": 1}`.
 
-```sh
-uv sync --locked --extra dev
-uv run local-translation --help
-uv run local-translation check-data --data examples/parallel.csv
-uv run local-translation check-data --config .env.example
-```
+## Limits
 
-Actual example output:
+- You must supply a trusted local Marian model (loaded with `local_files_only=True`); no model is bundled or auto-downloaded, and its language direction and license are your responsibility.
+- Source-disjoint splitting is not document/domain independence and not an untouched test set.
+- CPU-only, deterministic beam search, bounded input lengths; truncation can drop long-text information.
+- The historical notebook is kept with outputs cleared but was not executed end to end; its download/training cells can be costly.
+- Verified on Linux x86_64 only; the container runs data checks, not translation. Hosted CI (free public-repo runners) checks tests, lint, CLI and the Docker build.
 
-```json
-{"pairs": 3, "train_pairs": 2, "validation_pairs": 1}
-```
+## License
 
-`source,target` are required UTF-8 CSV headers. Other uniquely named columns are allowed. Blank pairs, malformed rows, and repeated case/whitespace-normalized source sentences fail rather than being silently dropped. `--config` is an opt-in dotenv file with `PARALLEL_CSV`; explicit `--data` wins. No credentials or service calls are needed.
-
-The lock is scoped to Linux x86_64. Other operating systems are not verified. The ordinary install and Docker image provide **data checks only**, with no Torch import. Optional ML dependencies are much larger:
-
-```sh
-uv sync --locked --extra dev --extra ml
-```
-
-## Local model workflow
-
-`translate MODEL TEXT...` and `train MODEL DATA OUTPUT` require the optional `ml` extra and a trusted local Marian directory containing tokenizer/config files and safetensors weights. Both loading calls use `local_files_only=True`; no model is selected or downloaded automatically. Pickle model weights and remote-code loading are not supported. Do not point at untrusted artifacts.
-
-Use `local-translation translate --help` and `local-translation train --help` for arguments. The offline tests use a tiny random model; the downloaded-model demonstration is the real-data quickstart above. A user-supplied pretrained model's language direction and license remain the user's responsibility.
-
-- CPU-only inference, deterministic beam search, bounded input count and lengths.
-- Target tokenizer mode, dynamic batch padding, target pad labels set to `-100`.
-- Seeded source-disjoint split before fitting. Normalized duplicates are rejected.
-- Explicit training with finite-loss checks; no auto-training on import or overwrite of existing output directories.
-- Token-count-weighted teacher-forced validation loss, not BLEU or a translation-quality claim.
-
-The model/tokenizer architecture comes from the supplied local artifact. The historical notebook used Helsinki-NLP Marian English-to-German and WMT16; the CLI does not fetch either. Truncation can discard long-text information. Source-disjoint splitting is not document/source/domain independence and is not an untouched evaluation set.
-
-## Checks
-
-```sh
-HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 OMP_NUM_THREADS=1 uv run pytest --cov=local_translation --cov-report=term-missing
-uv run ruff check src tests
-uv run ruff format --check src tests
-uv run mypy src
-uv run pre-commit run --all-files
-uv run python -m local_translation --help
-```
-
-With the ML extra: **24 tests, 96% coverage**, including actual tiny random Marian forward/backward, local synthetic SentencePiece, target padding, one-epoch training, CLI inference, and safetensors save/load. This proves pipeline wiring, not translation quality. With only the light dependencies, backend tests are explicitly skipped. No WMT fine-tuning, translation benchmark, BLEU, chrF or human evaluation was run; the quickstart fine-tune is a 12-pair wiring demo.
-
-## Docker
-
-```sh
-docker build --tag local-translation:ci .
-docker run --rm local-translation:ci --help
-docker run --rm -v "$PWD/examples/parallel.csv:/data.csv:ro" local-translation:ci check-data --data /data.csv
-```
-
-Multi-stage slim image, non-root runtime, no dev or ML dependencies. The container checks data, it does not translate or train. Hosted CI runs these build/run checks; see [verification](docs/verification.md) for the evidence boundary. No paid APIs, hosted training, self-hosted runners or deployment are configured. The workflow is restricted to public repositories and ordinary GitHub-hosted Linux runners.
-
-## Layout and data flow
-
-```text
-CSV -> core.read_pairs -> source-disjoint split -> explicit CPU train
-local safetensors + tokenizer -> model.encode / translate -> JSON
-Typer CLI -> input validation -> core/model -> separate errors on stderr
-```
-
-`src/local_translation/core.py` owns CSV and split rules; `model.py` owns lazy ML loading, encoding, training and inference; `cli.py` is the interface. Tests build invented data and a random miniature model locally, with hub access disabled. CI uses pinned direct requirements via pip, while local reproduction uses `uv.lock`; pip is not claimed to enforce the full transitive uv lock.
-
-## Historical notebook and limits
-
-`Language Translation with .ipynb` is retained as a historical experiment with outputs cleared. Target tokenization, dynamic label padding and Transformers 4.49 Trainer names were corrected separately. It still contains explicit data/model download and training cells. **The notebook was not executed end to end.** Its online installation/download cells are not a free-compute service, and full training can be costly in time or on a billed host.
-
-Next work: evaluate a licensed, appropriate pretrained local model on a genuinely untouched bilingual test set, inspect generated translations and failure modes, add length/domain slices, and measure BLEU/chrF with exact versions and signatures. No real-model quality, broad platform compatibility or production-readiness is claimed.
-
-See [verification and phase notes](docs/verification.md), [changelog](CHANGELOG.md), and [copy-only GitHub presentation](docs/presentation.md). No release/tag is created and no model or data artifacts are published.
-
-
-## License scope
-
-New project-owned package/engineering files use the owner's MIT default. See LICENSE and LICENSE-SCOPE.md. This is not permission to relicense historical notebooks, third-party code, datasets, models or weights. Their provenance and terms still need review. Earlier verification entries saying no license was added describe the initial pilot, not this follow-up.
-
-## Checked synthetic wiring demo
-
-See [commands, saved output and scope](docs/synthetic-demo.md). This is invented-input execution evidence, not model accuracy or a real-data gallery.
-
-## Portable notebook follow-up
-
-The root notebook now uses the supported local package with safe defaults and explicit data/training opt-ins. It replaces the platform-specific experiment rather than reproducing historical results. See `docs/notebook-migration.md` and the notebook settings. Earlier descriptions of live notebook downloads/hard-coded paths are historical and superseded. No dataset or weight rights are granted.
-
-## Real-data CPU example
-
-See [actual results, source terms and explicit download/preparation commands](docs/real-data.md). These are small development runs, not accuracy or production guarantees. No model/data is committed.
-
-[Original English-German direction: pinned model, attributed corpus and actual fine-tune](docs/real-german.md).
-
-## Measured CPU quality follow-up
-
-See [quality experiments, results and limits](docs/quality-cpu.md). These go beyond wiring smokes; some improve measured results, while others expose overfit or a stronger simple baseline. No quality guarantee.
-
-
-## Reliability follow-up
-
-See [new ordinary-use safeguards and limits](docs/fix-pass.md). Model-quality scores are unchanged.
+MIT for the new project-owned code (see `LICENSE` and `LICENSE-SCOPE.md`). Historical notebooks, third-party models, datasets and corpora keep their own terms; no rights clearance is claimed for them. Details and evidence: `docs/verification.md`, `docs/real-data.md`, `docs/real-german.md`, `CHANGELOG.md`.
